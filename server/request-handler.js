@@ -18,64 +18,97 @@ var defaultCorsHeaders = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'access-control-allow-headers': 'content-type, accept, X-Parse-Application-Id, X-Parse-REST-API-Key',
-  'access-control-max-age': 10, // Seconds.
+  'access-control-max-age': 86400 // Seconds.
 };
 
 
 
 var MessageCreater = (body) => {
+
   var record = {
-    username: body.username,
-    roomname: body.roomname,
-    text: body.text,
+    username: null,
+    roomname: null,
+    text: null,
+    objectId: Math.floor(Math.random() * 100000000),
     createdAt: new Date().toISOString(),
     modifiedAt: new Date().toISOString()
   };
   
+  var bodyArr = body.split('&');
+  
+  for (var items = 0; items < bodyArr.length; items ++) {
+    let item = bodyArr[items].split('=');
+    if (record.hasOwnProperty(item[0])) {
+      
+      record[item[0]] = item[1].toString();
+    }
+  }
+
   return record;
 };
 
 
 var getRequest = (request, response) => {
+  var {headers, method, url} = request;
+  let statusCode = 200;
 
-  //404 for non-existent endpoint
-  request.headers;
-  //Split into useable format;
-  //http://127.0.0.1:8080/?username=Batman
 
-  response.end(JSON.stringify(testbody));
+  var {headers, method, url} = request;
+
+  // let body = [];
+  // request.on('data', (chunk) => {
+  //   body.push(chunk);
+  // }).on('end', () => {
+  //   body = Buffer.concat(body).toString();
+  //   response.writeHead(statusCode, headers);
+  // });
+  var body = database;
+  response.writeHead(statusCode, {'access-control-allow-origin': '*'});
+  response.end(JSON.stringify(body));
 };
 
 var postRequest = (request, response) => {
-  console.log("post requewust recievedd3edd 34");
-  // request.headers;
-  //404 for non-existent
-  var uri = request.url.split('/');
-  var size = uri.length;
-  var statusCode;
-  if (database[uri[size - 2 ]][uri[size - 1]] === undefined) {
-    statusCode = 404;
-    response.end();
-  } 
+  var {headers, method, url} = request;
   
-  console.log('body is', request);
-  database[uri[size - 2]][uri[size - 1]].push(MessageCreater(request.body));
-    
-  response.end();
+  let body = [];
+  request.on('error', (err) => {
+    console.error(err);
+  });
+  // request.on('data', (chunk) => {
+  //   body.push(chunk);
+  // });
+  // request.on('end', () => {
+  //   body = Buffer.concat(body).toString();
+  //   database.results.push(MessageCreater(body));
+  //   response.on('error', (err) => {
+  //     console.error(err);
+  //   });
+  request.on('data', (data) => {
+    console.log(data);
+    var body = JSON.parse(data);
+    database.results.push(body);
+  });
+
+  // body = MessageCreater(body);
+  const responseBody = {headers, method, url, body};
+
+  response.writeHead(201, {'access-control-allow-origin': '*'});
+  response.end(JSON.stringify(responseBody));
+
 };
+
 var putRequest = (request, response) => {
-  request.headers;
-  //404 for non-existent
-
-
 
   response.end();
 };
+
 var optionRequest = (request, response) => {
-  request.headers;
-  //404 for non-existent
+  var headers = defaultCorsHeaders;
+  let statusCode = 200;
+  response.writeHead(statusCode, headers);
   response.end();
 };
+
 var deleteRequest = (request, response) => {
   request.headers;
   //404 for non-existent
@@ -94,7 +127,6 @@ var deleteRequest = (request, response) => {
 
 var requestHandler = function(request, response) {
   // Request and Response come from node's http module.
-  //
   // They include information about both the incoming request, such as
   // headers and URL, and about the outgoing response, such as its status
   // and content.
@@ -108,49 +140,46 @@ var requestHandler = function(request, response) {
   // debugging help, but you should always be careful about leaving stray
   // console.logs in your code.
   console.log('Serving request type ' + request.method + ' for url ' + request.url);
-  console.log('Request Headers' + JSON.stringify(request.headers));
-  console.log('Response Items' + response);
+  // console.log('Request Headers' + JSON.stringify(request.headers));
+  // console.log('Response Items' + response);
 
   // The outgoing status.
-  var statusCode = 200;
 
   var routing = {
     POST: postRequest,
     GET: getRequest,
     PUT: putRequest,
-    OPTION: optionRequest,
+    OPTIONS: optionRequest,
     DELETE: deleteRequest
   };
 
-  if (request.method === 'POST') {
-    
+  if (request.url !== '/classes/messages' && request.url !== '/classes/room') {
+    response.writeHead(404 , {'access-control-allow-origin': '*'});
+    response.end();
+  } else {
     routing[request.method](request, response);
   }
+
+
   // See the note below about CORS headers.
-  var headers = defaultCorsHeaders;
 
   // Tell the client we are sending them plain text.
   //
   // You will need to change this if you are sending something
   // other than plain text, like JSON or HTML.
-  headers['Content-Type'] = 'application/json';
 
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.
-  response.writeHead(statusCode, headers);
 
   // Make sure to always call response.end() - Node may not send
   // anything back to the client until you do. The string you pass to
   // response.end() will be the body of the response - i.e. what shows
-  // up in the browser.
-  var body = ('StatusCode' + statusCode + ', Headers:' + JSON.stringify(headers));
-
+  // // up in the browser.
+  // var body = ('StatusCode' + statusCode + ', Headers:' + JSON.stringify(headers));
   
-
 
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
-  response.end(JSON.stringify(database['classes']['messages']));
 };
 
 

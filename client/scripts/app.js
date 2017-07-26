@@ -38,15 +38,15 @@ var app = {
   send: function(message) {
     app.startSpinner();
 
-    // POST the message to the server
+    // POST the message to the serv er
     $.ajax({
       url: app.server,
       type: 'POST',
-      data: message,
+      contentType: 'application/json',
+      data: JSON.stringify(message),
       success: function (data) {
         // Clear messages input
         app.$message.val('');
-
         // Trigger a fetch to update the messages, pass true to animate
         app.fetch();
       },
@@ -63,7 +63,7 @@ var app = {
       // data: { order: '-createdAt' },
       contentType: 'application/json',
       success: function(data) {
-        console.log(data);
+        data = JSON.parse(data);
         // Don't bother if we have nothing to work with
         if (!data.results || !data.results.length) { return; }
 
@@ -75,6 +75,7 @@ var app = {
 
         // Only bother updating the DOM if we have a new message
         if (mostRecentMessage.objectId !== app.lastMessageId) {
+
           // Update the UI with the fetched rooms
           app.renderRoomList(data.results);
 
